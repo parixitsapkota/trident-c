@@ -9,12 +9,12 @@ all: debug
 
 # Create Debug build
 debug: set_up
-	@cd $(BUILD_DIR_DEBUG) && $(CMAKE) -DCMAKE_BUILD_TYPE=Debug ..
+	@cd $(BUILD_DIR_DEBUG) && $(CMAKE) -DCMAKE_BUILD_TYPE=Debug ../..
 	@cd $(BUILD_DIR_DEBUG) && $(MAKE)
 
 # Create Release build
 release: set_up
-	@cd $(BUILD_DIR_RELEASE) && $(CMAKE) -DCMAKE_BUILD_TYPE=Release ..
+	@cd $(BUILD_DIR_RELEASE) && $(CMAKE) -DCMAKE_BUILD_TYPE=Release ../..
 	@cd $(BUILD_DIR_RELEASE) && $(MAKE)
 
 dirs:
