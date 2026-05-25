@@ -1,0 +1,57 @@
+// Qualifiers
+pub extern const volatile
+
+// Function
+func ret
+
+// conditional
+if else
+
+// Loop
+loop while
+
+// Signed int
+i8 i16 i32 i64 i128
+
+// Unsigned int
+u8 u16 u32 u64 u128
+
+// Float
+f16 f32 f64 f128
+
+// Struct & Union
+struct union
+
+// Enumerator
+enum error
+
+// Pointers
+ptr dref
+
+// Directives
+@typeof @define @import
+
+// Seperator
+{} [] () , : ;
+
+// Adative
++ -
+
+// Multiplactive
+* / %
+
+// Assignment
+= += -= *= /= %=
+
+// Unary
+++ -- !
+
+// Locical
+&& ||
+
+// Compare
+ == != < > <= >=
+
+// Shift
+<< >>
+
