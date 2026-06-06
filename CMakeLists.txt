@@ -11,7 +11,8 @@ add_executable(trident
   src/token/token.h
   src/lexer/lexer.c
   src/lexer/lexer.h
+  src/ast/ast.c
+  src/ast/ast.h
 )
 
 target_compile_options(trident PRIVATE -Wall -Wextra)
-
