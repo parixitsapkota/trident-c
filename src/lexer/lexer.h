@@ -153,12 +153,10 @@ typedef struct {
   size_t col;
 } Token;
 
-
 char *token_kind_to_str(TokenKind kind);
 TokenKind get_keyword_kind(const char *word);
 TokenKind get_directive_kind(const char *word);
 bool is_token_kind_error(TokenKind kind);
-void print_error_tokens(const SHI_OPA *token_pool);
 Token *lexer(const char *buffer);
 
 #endif // TRIDENT_LEXER_H
