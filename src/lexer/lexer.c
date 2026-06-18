@@ -46,10 +46,11 @@ char *get_digit(const char *buffer, size_t *i, int *is_float, size_t *col) {
   return substr(buffer, start, *i);
 }
 
-char *get_string(const char *buffer, size_t *i, size_t *col, TokenKind *error) {
-  const size_t start = ++*i; // Skip char `"`.
+char *get_string(const char *buffer, size_t *i, size_t *col, TokenKind *error,
+                 char c) {
+  const size_t start = ++*i; // Skip first char.
   ++*col;
-  while (buffer[*i] != '"') {
+  while (buffer[*i] != c) {
     if (buffer[*i] == '\0' || buffer[*i] == '\n') {
       *error = UNTERMINATED_STRING;
       break;
@@ -57,8 +58,8 @@ char *get_string(const char *buffer, size_t *i, size_t *col, TokenKind *error) {
     ++*col;
     ++*i;
   }
-  if (buffer[*i] == '"') {
-    ++*i; // Skip char `"`.
+  if (buffer[*i] == c) {
+    ++*i; // Skip last char.
     ++*col;
   }
   return substr(buffer, start, *i - 1);
@@ -78,24 +79,6 @@ char *get_string_ident(const char *buffer, size_t *i, size_t *col,
   }
   if (buffer[*i] == '"') {
     ++*i; // Skip char `"`.
-    ++*col;
-  }
-  return substr(buffer, start, *i - 1);
-}
-
-char *get_char(const char *buffer, size_t *i, size_t *col, TokenKind *error) {
-  const size_t start = ++*i; // Skip char `"`.
-  ++*col;
-  while (buffer[*i] != '\'') {
-    if (buffer[*i] == '\0' || buffer[*i] == '\n') {
-      *error = UNTERMINATED_CHAR;
-      break;
-    }
-    ++*col;
-    ++*i;
-  }
-  if (buffer[*i] == '\'') {
-    ++*i; // Skip char `'`.
     ++*col;
   }
   return substr(buffer, start, *i - 1);
@@ -163,49 +146,36 @@ SHI_OPA *lexer(const char *buffer) {
       continue;
     }
 
-    // Handle strings.
-    if (buffer[i] == '"') {
-      TokenKind error = STRING;
-      const char *string = get_string(buffer, &i, &col, &error);
-      c_token = (Token){error, (char *)string, line, tcol};
-      shi_opa_push(token_pool, c_token);
-      continue;
-    }
-
-    // Handle character.
-    if (buffer[i] == '\'') {
-      TokenKind error = CHARACTER;
-      const char *char_ = get_char(buffer, &i, &col, &error);
-      c_token = (Token){error, (char *)char_, line, tcol};
+    // Handle strings & char.
+    if (buffer[i] == '"' || buffer[i] == '\'') {
+      TokenKind error = buffer[i] == '"' ? STRING : CHARACTER;
+      const char *value = get_string(buffer, &i, &col, &error, buffer[i]);
+      c_token = (Token){error, (char *)value, line, tcol};
       shi_opa_push(token_pool, c_token);
       continue;
     }
 
     // Handle directives.
     if (buffer[i] == '@') {
-      if (buffer[i + 1] != '\0' && buffer[i + 1] == '"') {
+      if (buffer[i + 1] == '"' || isalpha(buffer[i + 1])) {
         ++i; // Skip `@` char.
         ++col;
+      }
+      if (buffer[i] == '"') {
         TokenKind error = IDENTIFIER;
         const char *ident = get_string_ident(buffer, &i, &col, &error);
         c_token = (Token){error, (char *)ident, line, tcol};
-        shi_opa_push(token_pool, c_token);
-        continue;
-      } else if (buffer[i + 1] != '\0' &&
-                 isalpha((unsigned char)buffer[i + 1])) {
-        ++i; // Skip `@` char.
-        ++col;
+      } else if (isalpha(buffer[i])) {
         char *directive = get_word(buffer, &i, &col);
         TokenKind kind = get_directive_kind(directive);
-        if (kind != UNKNOWN) {
-          c_token = (Token){kind, (char *)directive, line, tcol};
-        } else {
-          free(directive);
-          c_token = (Token){UNKNOWN_DIRECTIVE, NULL, line, tcol};
-        }
-        shi_opa_push(token_pool, c_token);
-        continue;
+        free(directive);
+        kind = kind != UNKNOWN ? kind : UNKNOWN_DIRECTIVE;
+        c_token = (Token){kind, NULL, line, tcol};
+      } else {
+        break;
       }
+      shi_opa_push(token_pool, c_token);
+      continue;
     }
 
 // Handle operators and seperators.
