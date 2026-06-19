@@ -132,8 +132,10 @@ typedef enum {
   UNTERMINATED_CHAR,
   UNKNOWN_TOKEN,
   UNKNOWN_DIRECTIVE,
-  // End of Tokens & unknown
+  // Misc Tokens
   END_OF_TOKEN,
+  TOKEN_POOL,
+  ERROR_POOL,
   UNKNOWN,
 } TokenKind;
 
@@ -149,14 +151,32 @@ typedef struct {
   size_t col;
 } Token;
 
-char *token_kind_to_str(TokenKind kind);
-TokenKind get_keyword_kind(const char *str, size_t len);
-TokenKind get_directive_kind(const char *word);
-bool is_token_kind_error(TokenKind kind);
-void print_tokens(SHI_OPA *token_pool);
-size_t print_error_token_kind(const char *file_name, SHI_OPA *token_pool);
+typedef struct {
+  const char *buffer;
+  size_t index;
+  size_t line;
+  size_t col;
+  SHI_OPA *token_pool_head;
+  SHI_OPA *token_pool;
+
+  bool error;
+  bool faital_error;
+  SHI_OPA *error_pool;
+} Lexer;
 
 SHI_OPA *lexer(const char *buffer);
+char peak(Lexer *l, int offset);
+void consume(Lexer *l);
+
+TokenKind get_keyword_kind(const char *str, size_t len);
+TokenKind get_directive_kind(const char *word);
+
+char *token_kind_to_str(TokenKind kind);
+void print_tokens(SHI_OPA *token_pool);
+
+bool is_token_kind_error(TokenKind kind);
+size_t print_error_token_kind(const char *file_name, SHI_OPA *error_pool);
+
 void free_token_pool(SHI_OPA *token_pool);
 
 #endif // TRIDENT_PARSER_H

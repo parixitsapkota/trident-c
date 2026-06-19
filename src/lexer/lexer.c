@@ -2,6 +2,7 @@
 #include "../../SHI/shi_opa.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,220 +17,210 @@ char *substr(const char *str, const size_t start, const size_t end) {
   return substr;
 }
 
-char *get_word(const char *buffer, size_t *i, size_t *col) {
-  const size_t start = *i;
-  while (isalnum(buffer[*i]) || buffer[*i] == '_') {
-    ++*col;
-    ++*i;
-  }
-  return substr(buffer, start, *i);
+char *get_word(Lexer *l) {
+  const size_t start = l->index;
+  while (isalnum(peak(l, 0)) || peak(l, 0) == '_')
+    consume(l);
+  return substr(l->buffer, start, l->index);
 }
 
-char *get_digit(const char *buffer, size_t *i, int *is_float, size_t *col) {
-  const size_t start = *i;
-  *is_float = 0;
-  if (buffer[*i] == '.') {
-    *is_float = 1;
-    ++*col;
-    ++*i;
+char *get_digit(Lexer *l, bool *is_float) {
+  const size_t start = l->index;
+  *is_float = false;
+  if (peak(l, 0) == '.') {
+    *is_float = true;
+    consume(l);
   }
-  while (isdigit(buffer[*i]) || buffer[*i] == '.') {
-    if (buffer[*i] == '.') {
+  while (isdigit(peak(l, 0)) || peak(l, 0) == '.') {
+    if (peak(l, 0) == '.') {
       if (*is_float) {
         break;
       }
       *is_float = 1;
     }
-    ++*col;
-    ++*i;
+    consume(l);
   }
-  return substr(buffer, start, *i);
+  return substr(l->buffer, start, l->index);
 }
 
-char *get_string(const char *buffer, size_t *i, size_t *col, TokenKind *error,
-                 char c) {
-  const size_t start = ++*i; // Skip first char.
-  ++*col;
-  while (buffer[*i] != c) {
-    if (buffer[*i] == '\0' || buffer[*i] == '\n') {
+char *get_string(Lexer *l, TokenKind *error, char c) {
+  consume(l); // Skip first char.
+  const size_t start = l->index;
+
+  while (peak(l, 0) != c) {
+    if (peak(l, 0) == '\0' || peak(l, 0) == '\n') {
       *error = UNTERMINATED_STRING;
       break;
     }
-    ++*col;
-    ++*i;
+    consume(l);
   }
-  if (buffer[*i] == c) {
-    ++*i; // Skip last char.
-    ++*col;
-  }
-  return substr(buffer, start, *i - 1);
+  if (peak(l, 0) == c)
+    consume(l); // Skip last char.
+  return substr(l->buffer, start, l->index - 1);
 }
 
-char *get_string_ident(const char *buffer, size_t *i, size_t *col,
-                       TokenKind *error) {
-  const size_t start = ++*i; // Skip char `"`.
-  ++*col;
-  while (buffer[*i] != '"') {
-    if (buffer[*i] == '\0' || buffer[*i] == '\n') {
+char *get_string_ident(Lexer *l, TokenKind *error) {
+  consume(l); // Skip char `"`.
+  const size_t start = l->index;
+
+  while (peak(l, 0) != '"') {
+    if (peak(l, 0) == '\0' || peak(l, 0) == '\n') {
       *error = UNTERMINATED_STRING;
       break;
     }
-    ++*col;
-    ++*i;
+    consume(l);
   }
-  if (buffer[*i] == '"') {
-    ++*i; // Skip char `"`.
-    ++*col;
-  }
-  return substr(buffer, start, *i - 1);
+  if (peak(l, 0) == '"')
+    consume(l); // Skip char `"`.
+  return substr(l->buffer, start, l->index - 1);
+}
+
+Lexer init_lexer(const char *buffer) {
+  Lexer l = {0};
+  l.buffer = buffer;
+  l.line = 1;
+  l.col = 1;
+  l.token_pool_head = shi_opa_init(Token, 1024);
+  l.token_pool = l.token_pool_head;
+  return l;
 }
 
 SHI_OPA *lexer(const char *buffer) {
 
-  SHI_OPA *token_pool_head = shi_opa_init(Token, 1024);
-  SHI_OPA *token_pool = token_pool_head;
-
-  size_t line = 1, col = 1;
-  size_t i = 0;
+  Lexer l = init_lexer(buffer);
   Token c_token = {0};
 
-  while (buffer[i] != '\0') {
+  while (peak(&l, 0) != '\0') {
 
     // Skip line comment
-    if (buffer[i] == '/' && buffer[i + 1] == '/') {
-      while (buffer[i] != '\n') {
-        if (buffer[i] == '\0') {
+    if (peak(&l, 0) == '/' && peak(&l, 1) == '/') {
+      while (peak(&l, 0) != '\n') {
+        if (peak(&l, 0) == '\0') {
           break;
         }
-        ++col;
-        ++i;
+        consume(&l);
       }
       continue;
     }
 
     // Handle whitespace.
-    if (isspace(buffer[i])) {
-      if (buffer[i] == '\n') {
-        col = 1;
-        ++line;
+    if (isspace(peak(&l, 0))) {
+      if (peak(&l, 0) == '\n') {
+        l.col = 1;
+        ++l.line;
       } else {
-        ++col;
+        ++l.col;
       }
-      ++i;
+      ++l.index;
       continue;
     }
 
-    const size_t tcol = col;
+    const size_t tcol = l.col;
 
     // Handle identifiers & keywords.
-    if (isalpha(buffer[i]) || buffer[i] == '_') {
-      size_t temp_i = i;
-      char *word = get_word(buffer, &i, &col);
-      const TokenKind kind = get_keyword_kind(word, i - temp_i);
+    if (isalpha(peak(&l, 0)) || peak(&l, 0) == '_') {
+      size_t temp_i = l.index;
+      char *word = get_word(&l);
+      const TokenKind kind = get_keyword_kind(word, l.index - temp_i);
       if (kind != IDENTIFIER) {
         free(word);
-        c_token = (Token){kind, NULL, line, tcol};
+        c_token = (Token){kind, NULL, l.line, tcol};
       } else {
-        c_token = (Token){kind, word, line, tcol};
+        c_token = (Token){kind, word, l.line, tcol};
       }
-      shi_opa_push(token_pool, c_token);
+      shi_opa_push(l.token_pool, c_token);
       continue;
     }
 
     // Handle digits.
-    if (isdigit(buffer[i]) || (buffer[i] == '.' && isdigit(buffer[i + 1]))) {
-      int is_float = 0;
-      const char *digit = get_digit(buffer, &i, &is_float, &col);
+    if (isdigit(peak(&l, 0)) || (peak(&l, 0) == '.' && isdigit(peak(&l, 1)))) {
+      bool is_float = false;
+      const char *digit = get_digit(&l, &is_float);
       const TokenKind kind = is_float ? FLOAT : INT;
-      c_token = (Token){kind, (char *)digit, line, tcol};
-      shi_opa_push(token_pool, c_token);
+      c_token = (Token){kind, (char *)digit, l.line, tcol};
+      shi_opa_push(l.token_pool, c_token);
       continue;
     }
 
     // Handle strings & char.
-    if (buffer[i] == '"' || buffer[i] == '\'') {
-      TokenKind error = buffer[i] == '"' ? STRING : CHARACTER;
-      const char *value = get_string(buffer, &i, &col, &error, buffer[i]);
-      c_token = (Token){error, (char *)value, line, tcol};
-      shi_opa_push(token_pool, c_token);
+    if (peak(&l, 0) == '"' || peak(&l, 0) == '\'') {
+      TokenKind error = peak(&l, 0) == '"' ? STRING : CHARACTER;
+      const char *value = get_string(&l, &error, peak(&l, 0));
+      c_token = (Token){error, (char *)value, l.line, tcol};
+      shi_opa_push(l.token_pool, c_token);
       continue;
     }
 
     // Handle directives.
-    if (buffer[i] == '@') {
-      if (buffer[i + 1] == '"' || isalpha(buffer[i + 1])) {
-        ++i; // Skip `@` char.
-        ++col;
+    if (peak(&l, 0) == '@') {
+      if (peak(&l, 1) == '"' || isalpha(peak(&l, 1))) {
+        consume(&l);
       }
-      if (buffer[i] == '"') {
+      if (peak(&l, 0) == '"') {
         TokenKind error = IDENTIFIER;
-        const char *ident = get_string_ident(buffer, &i, &col, &error);
-        c_token = (Token){error, (char *)ident, line, tcol};
-      } else if (isalpha(buffer[i])) {
-        char *directive = get_word(buffer, &i, &col);
+        const char *ident = get_string_ident(&l, &error);
+        c_token = (Token){error, (char *)ident, l.line, tcol};
+      } else if (isalpha(peak(&l, 0))) {
+        char *directive = get_word(&l);
         TokenKind kind = get_directive_kind(directive);
         free(directive);
         kind = kind != UNKNOWN ? kind : UNKNOWN_DIRECTIVE;
-        c_token = (Token){kind, NULL, line, tcol};
+        c_token = (Token){kind, NULL, l.line, tcol};
       } else {
         break;
       }
-      shi_opa_push(token_pool, c_token);
+      shi_opa_push(l.token_pool, c_token);
       continue;
     }
 
 // Handle operators and seperators.
-#define incLC                                                                  \
-  ++col;                                                                       \
-  ++i
-
 #define add_s(a, b)                                                            \
   case a:                                                                      \
-    c_token = (Token){b, NULL, line, tcol};                                    \
+    c_token = (Token){b, NULL, l.line, tcol};                                  \
     break
 
 #define add_2s(a, b, c, d)                                                     \
   case a:                                                                      \
-    if (buffer[i + 1] == b) {                                                  \
-      c_token = (Token){d, NULL, line, tcol};                                  \
-      incLC;                                                                   \
+    if (peak(&l, 1) == b) {                                                    \
+      c_token = (Token){d, NULL, l.line, tcol};                                \
+      consume(&l);                                                             \
     } else {                                                                   \
-      c_token = (Token){c, NULL, line, tcol};                                  \
+      c_token = (Token){c, NULL, l.line, tcol};                                \
     }                                                                          \
     break
 
 #define add_2sc(a, b, c, d, e)                                                 \
   case a:                                                                      \
-    if (buffer[i + 1] == b) {                                                  \
-      c_token = (Token){d, NULL, line, tcol};                                  \
-      incLC;                                                                   \
-    } else if (buffer[i + 1] == a) {                                           \
-      c_token = (Token){e, NULL, line, tcol};                                  \
-      incLC;                                                                   \
+    if (peak(&l, 1) == b) {                                                    \
+      c_token = (Token){d, NULL, l.line, tcol};                                \
+      consume(&l);                                                             \
+    } else if (peak(&l, 1) == a) {                                             \
+      c_token = (Token){e, NULL, l.line, tcol};                                \
+      consume(&l);                                                             \
     } else {                                                                   \
-      c_token = (Token){c, NULL, line, tcol};                                  \
+      c_token = (Token){c, NULL, l.line, tcol};                                \
     }                                                                          \
     break
 
 #define add_3sc(a, b, c, d, e, f)                                              \
   case a:                                                                      \
-    if (buffer[i + 1] == b) {                                                  \
-      c_token = (Token){d, NULL, line, tcol};                                  \
-      incLC;                                                                   \
-    } else if (buffer[i + 1] == a) {                                           \
-      if (buffer[i + 2] == b) {                                                \
-        c_token = (Token){f, NULL, line, tcol};                                \
-        incLC;                                                                 \
+    if (peak(&l, 1) == b) {                                                    \
+      c_token = (Token){d, NULL, l.line, tcol};                                \
+      consume(&l);                                                             \
+    } else if (peak(&l, 1) == a) {                                             \
+      if (peak(&l, 2) == b) {                                                  \
+        c_token = (Token){f, NULL, l.line, tcol};                              \
+        consume(&l);                                                           \
       } else {                                                                 \
-        c_token = (Token){e, NULL, line, tcol};                                \
+        c_token = (Token){e, NULL, l.line, tcol};                              \
       }                                                                        \
-      incLC;                                                                   \
+      consume(&l);                                                             \
     } else {                                                                   \
-      c_token = (Token){c, NULL, line, tcol};                                  \
+      c_token = (Token){c, NULL, l.line, tcol};                                \
     }                                                                          \
     break
 
-    switch (buffer[i]) {
+    switch (peak(&l, 0)) {
       // Handle operators with 1 char.
       add_s('{', O_BRACE);
       add_s('}', C_BRACE);
@@ -260,14 +251,21 @@ SHI_OPA *lexer(const char *buffer) {
       add_3sc('>', '=', GREATER, GREATER_EQUAL, SHIFT_RIGHT,
               SHIFT_RIGHT_ASSIGN);
     default:
-      c_token = (Token){UNKNOWN_TOKEN, NULL, line, tcol};
+      c_token = (Token){UNKNOWN_TOKEN, NULL, l.line, tcol};
     }
 
-    shi_opa_push(token_pool, c_token);
-    incLC;
+    shi_opa_push(l.token_pool, c_token);
+    consume(&l);
   }
 
   c_token = (Token){END_OF_TOKEN, NULL, 0, 0};
-  shi_opa_push(token_pool, c_token);
-  return token_pool_head;
+  shi_opa_push(l.token_pool, c_token);
+  return l.token_pool_head;
+}
+
+char peak(Lexer *l, int offset) { return l->buffer[l->index + offset]; }
+
+void consume(Lexer *l) {
+  ++l->col;
+  ++l->index;
 }
