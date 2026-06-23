@@ -31,6 +31,24 @@
 #define BG_MAGENTA "\033[45m"
 #define BG_CYAN "\033[46m"
 #define BG_WHITE "\033[47m"
+/* Bright Foreground Colors */
+#define FGB_BLACK "\033[90m"
+#define FGB_RED "\033[91m"
+#define FGB_GREEN "\033[92m"
+#define FGB_YELLOW "\033[93m"
+#define FGB_BLUE "\033[94m"
+#define FGB_MAGENTA "\033[95m"
+#define FGB_CYAN "\033[96m"
+#define FGB_WHITE "\033[97m"
+/* Bright Background Colors */
+#define BGB_BLACK "\033[100m"
+#define BGB_RED "\033[101m"
+#define BGB_GREEN "\033[102m"
+#define BGB_YELLOW "\033[103m"
+#define BGB_BLUE "\033[104m"
+#define BGB_MAGENTA "\033[105m"
+#define BGB_CYAN "\033[106m"
+#define BGB_WHITE "\033[107m"
 
 char *substr(const char *str, const size_t start, const size_t end);
 bool issymbol(const char c);

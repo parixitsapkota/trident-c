@@ -139,13 +139,39 @@ void lexer(Lexer *l, size_t len, Error *e) {
 }
 
 void print_tokens(Lexer *l) {
+  int maxr = 0, maxl = 0;
   for (size_t i = 0;; ++i) {
     Token *token = (Token *)shi_opa_index(l->token_pool_head, i);
     if (!token || token->kind == END_OF_TOKEN) {
       break;
     }
     const char *kind = token_kind_to_str(token->kind);
-    printf("%*s : %s\n", 18, kind, token->value ? token->value : "");
+    int lenl = strlen(kind);
+    lenl = lenl > 5 ? lenl : 5;
+    maxl = maxl < lenl ? lenl : maxl;
+
+    int lenr = token->value ? strlen(token->value) : 5;
+    maxr = maxr < lenr ? lenr : maxr;
+  }
+
+  fprintf(stdout, BOLD FG_BLACK BG_YELLOW "%*s " FG_WHITE BG_BLACK ":" FG_BLACK BG_YELLOW " %-*s" RESET "\n", maxl, "Kind",
+          maxr, "Value");
+
+  bool dim = false;
+  for (size_t i = 0;; ++i) {
+    Token *token = (Token *)shi_opa_index(l->token_pool_head, i);
+    if (!token || token->kind == END_OF_TOKEN) {
+      break;
+    }
+    const char *kind = token_kind_to_str(token->kind);
+    if (dim) {
+      fprintf(stdout, BOLD FG_BLACK BG_WHITE "%*s " FG_WHITE BG_BLACK ":" FG_BLACK BG_WHITE " %-*s" RESET "\n", maxl, kind,
+              maxr, token->value ? token->value : "NULL");
+    } else {
+      fprintf(stdout, BOLD FG_WHITE BG_BLACK "%*s " FG_WHITE BG_BLACK ":" FG_WHITE BG_BLACK " %-*s" RESET "\n", maxl, kind,
+              maxr, token->value ? token->value : "NULL");
+    }
+    dim = !dim;
   }
 }
 

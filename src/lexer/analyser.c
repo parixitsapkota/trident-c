@@ -175,55 +175,55 @@ char *get_digit(Lexer *l, TokenKind *kind) {
 // ==================
 TokenKind get_symbol(Lexer *l, size_t len) {
 
-#define add_s(a, b)                                                                                                        \
+#define add_s(a, b)                                                                                                            \
   case a: consume(l); return b
 
-#define add_2s(a, b, c, d)                                                                                                 \
-  case a:                                                                                                                  \
-    if (l->index + 1 < len && peak(l, 1) == b) {                                                                           \
-      consume(l);                                                                                                          \
-      consume(l);                                                                                                          \
-      return d;                                                                                                            \
-    } else {                                                                                                               \
-      consume(l);                                                                                                          \
-      return c;                                                                                                            \
+#define add_2s(a, b, c, d)                                                                                                     \
+  case a:                                                                                                                      \
+    if (l->index + 1 < len && peak(l, 1) == b) {                                                                               \
+      consume(l);                                                                                                              \
+      consume(l);                                                                                                              \
+      return d;                                                                                                                \
+    } else {                                                                                                                   \
+      consume(l);                                                                                                              \
+      return c;                                                                                                                \
     }
 
-#define add_2sc(a, b, c, d, e)                                                                                             \
-  case a:                                                                                                                  \
-    if (l->index + 1 < len && peak(l, 1) == b) {                                                                           \
-      consume(l);                                                                                                          \
-      consume(l);                                                                                                          \
-      return d;                                                                                                            \
-    } else if (l->index + 1 < len && peak(l, 1) == a) {                                                                    \
-      consume(l);                                                                                                          \
-      consume(l);                                                                                                          \
-      return e;                                                                                                            \
-    } else {                                                                                                               \
-      consume(l);                                                                                                          \
-      return c;                                                                                                            \
+#define add_2sc(a, b, c, d, e)                                                                                                 \
+  case a:                                                                                                                      \
+    if (l->index + 1 < len && peak(l, 1) == b) {                                                                               \
+      consume(l);                                                                                                              \
+      consume(l);                                                                                                              \
+      return d;                                                                                                                \
+    } else if (l->index + 1 < len && peak(l, 1) == a) {                                                                        \
+      consume(l);                                                                                                              \
+      consume(l);                                                                                                              \
+      return e;                                                                                                                \
+    } else {                                                                                                                   \
+      consume(l);                                                                                                              \
+      return c;                                                                                                                \
     }
 
-#define add_3sc(a, b, c, d, e, f)                                                                                          \
-  case a:                                                                                                                  \
-    if (l->index + 1 < len && peak(l, 1) == b) {                                                                           \
-      consume(l);                                                                                                          \
-      consume(l);                                                                                                          \
-      return d;                                                                                                            \
-    } else if (l->index + 1 < len && peak(l, 1) == a) {                                                                    \
-      if (l->index + 2 < len && peak(l, 2) == b) {                                                                         \
-        consume(l);                                                                                                        \
-        consume(l);                                                                                                        \
-        consume(l);                                                                                                        \
-        return f;                                                                                                          \
-      } else {                                                                                                             \
-        consume(l);                                                                                                        \
-        consume(l);                                                                                                        \
-        return e;                                                                                                          \
-      }                                                                                                                    \
-    } else {                                                                                                               \
-      consume(l);                                                                                                          \
-      return c;                                                                                                            \
+#define add_3sc(a, b, c, d, e, f)                                                                                              \
+  case a:                                                                                                                      \
+    if (l->index + 1 < len && peak(l, 1) == b) {                                                                               \
+      consume(l);                                                                                                              \
+      consume(l);                                                                                                              \
+      return d;                                                                                                                \
+    } else if (l->index + 1 < len && peak(l, 1) == a) {                                                                        \
+      if (l->index + 2 < len && peak(l, 2) == b) {                                                                             \
+        consume(l);                                                                                                            \
+        consume(l);                                                                                                            \
+        consume(l);                                                                                                            \
+        return f;                                                                                                              \
+      } else {                                                                                                                 \
+        consume(l);                                                                                                            \
+        consume(l);                                                                                                            \
+        return e;                                                                                                              \
+      }                                                                                                                        \
+    } else {                                                                                                                   \
+      consume(l);                                                                                                              \
+      return c;                                                                                                                \
     }
 
   switch (peak(l, 0)) {
@@ -262,7 +262,7 @@ TokenKind get_symbol(Lexer *l, size_t len) {
 // ==================
 // Get Kind String
 // ==================
-#define TOK_STR(x)                                                                                                         \
+#define TOK_STR(x)                                                                                                             \
   case x: return #x
 char *token_kind_to_str(TokenKind kind) {
   switch (kind) {

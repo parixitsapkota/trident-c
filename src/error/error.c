@@ -44,7 +44,7 @@ void init_line_stream(Error *e, const char *buffer, const size_t len) {
   }
 }
 
-#define err_str(a, b)                                                                                                      \
+#define err_str(a, b)                                                                                                          \
   case a: return b
 
 static const char *error_kind_to_str(const ErrorKind kind) {
@@ -66,13 +66,14 @@ void print_errors(Error *e, const char *file, const char *buffer, const size_t b
     }
 
     const char *kind = error_kind_to_str(err->kind);
-    fprintf(stderr, BOLD FG_BLACK BG_WHITE " %s:%lu:%lu: " RESET BOLD FG_WHITE BG_RED " ERROR " RESET " %s\n", file,
-            err->line, err->col, kind);
+    fprintf(stderr, BOLD FG_BLACK BG_WHITE " %s:%lu:%lu: " RESET BOLD FGB_WHITE BG_RED " ERROR " RESET " %s\n", file, err->line,
+            err->col, kind);
 
     if (e->line_stream && err->line > 0 && err->line <= e->line_stream_len) {
-      fprintf(stdout, DIM BOLD "%4lu|" RESET " %s\n", err->line, e->line_stream[err->line - 1]);
+      const char *format = FG_WHITE BOLD "%4lu|" RESET " %s\n";
+      fprintf(stdout, format, err->line, e->line_stream[err->line - 1]);
     }
-    printf(DIM BOLD "    |" RESET);
+    printf(FG_WHITE BOLD "    |" RESET);
     for (size_t i = 0; i < err->col; ++i) {
       putchar(' ');
     }
