@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,22 +10,27 @@
 #include "util/util.h"
 
 int main(int argc, char *argv[]) {
+  bool *help = shi_flag_bool("-help", false, "show the usage.");
+  shi_flag_set_short(help, "h");
+
   bool *tok = shi_flag_bool("-tok", false, "enable verbose tokens output.");
   shi_flag_set_short(tok, "t");
+
   char **file = shi_flag_str("-file", NULL, "file name to read.");
   shi_flag_set_short(file, "i");
 
-  if (!shi_flag_parse(argc, argv)) {
-    shi_flag_print_error(stderr);
-    fprintf(stderr, "Usage: %s [OPTIONS]\n", shi_flag_program_name());
+  bool arguments = shi_flag_parse(argc, argv);
+  const char *program = shi_flag_program_name();
+
+  if (!arguments) {
+    error("USAGE:", format("%s [COMMAND] [OPTIONS]", program));
     shi_flag_print_options(stderr);
+    error(program, "invalid arguments.");
     return 1;
   }
-
   if (!*file) {
-    fprintf(stderr, BOLD FG_BLACK BG_WHITE "%s: " FG_WHITE BG_RED " ERROR " RESET " no input files.\n",
-            shi_flag_program_name());
-    exit(1);
+    error(program, "no input files. (try [--help, -h])");
+    return 1;
   }
 
   size_t len;

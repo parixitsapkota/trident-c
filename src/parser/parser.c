@@ -13,6 +13,9 @@ Parser *init_parser(Lexer *l) {
   return &p;
 }
 
-void parse(Parser *p) { return; }
+void parse(Parser *p) {
+  (void)p;
+  return;
+}
 
 void free_parser(Parser *p) { shi_opa_free(p->ast_pool_head); }

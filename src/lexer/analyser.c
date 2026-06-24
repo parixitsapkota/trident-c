@@ -63,6 +63,9 @@ char *get_string(Lexer *l, Error *e, char c) {
   return substr(l->buffer, start, l->index - 1);
 }
 
+// TODO: add errors for incorrect formating
+// (eg. 0_1784) : incorrect.
+//          ^~
 // ==================
 // Get Digit
 // ==================
