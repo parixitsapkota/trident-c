@@ -1,3 +1,4 @@
 [submodule "SHI"]
 	path = SHI
-	url = https://github.com/parixitsapkota/SHI
+	url = git@github.com:parixitsapkota/SHI.git
+	branch = main
