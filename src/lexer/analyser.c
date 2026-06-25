@@ -265,7 +265,7 @@ TokenKind get_symbol(Lexer *l, size_t len) {
 // ==================
 // Get Kind String
 // ==================
-#define TOK_STR(x, y)                                                                                                             \
+#define TOK_STR(x, y)                                                                                                          \
   case x: return y
 char *token_kind_to_str(TokenKind kind) {
   switch (kind) {
